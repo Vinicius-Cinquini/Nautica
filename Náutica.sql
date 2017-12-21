@@ -993,5 +993,8 @@ select * from proprietarios_e_embarcacoes;
 select * from associados_e_telefones;
 select * from associados_sem_matricula;
 select * from vagasPropEmb;
-select * from localizacao where area = 'Pier C' order by vaga;
+select embarcacao as EMBARCAÇÃO, area as ÁREA, vaga from localizacao order by embarcacao;
 select * from vagas;
+select * from areas;
+
+commit;
