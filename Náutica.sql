@@ -193,7 +193,7 @@ where e.matricula = a.matricula
 and a.nome = 'Edson Fernandes Mascarenhas'
 and l.embarcacao = e.nome;
 
--- Proprietários das vagas na marina com nome e matrícula
+-- Vagas na marina pertencentes a associados, com nome e matrícula
 select p.pier, p.vaga, ' ' as " ", a.nome as PROPRIETÁRIO, ' ' as "  ", a.matricula as MATRÍCULA
 from propriedadeSobreVagas p, associados a
 where p.proprietario = a.matricula;
@@ -224,6 +224,45 @@ select * from propriedadeSobreVagas;
 select * from telefones;
 select * from tiposDeEmbarcacoes;
 select * from vagasPorPier;
+
+--------------------------------------------------------------------------------
+--------------------------- CRIAÇÃO DE VISUALIZAÇÕES ---------------------------
+--------------------------------------------------------------------------------
+
+create view embarcacoes_e_proprietarios
+as select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula and l.embarcacao = e.nome
+order by e.nome;
+
+create view proprietarios_e_embarcacoes
+as select a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA, e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula and l.embarcacao = e.nome
+order by a.nome;
+
+create view associados_e_telefones
+as select t.associado as MATRÍCULA, a.nome as ASSOCIADO, t.ddd, t.telefone
+from associados a join telefones t
+on a.matricula = t.associado
+order by a.nome;
+
+create view associados_sem_matricula
+as select matricula as MATRÍCULA, nome as ASSOCIADO
+from associados 
+where length(matricula) < 3
+order by matricula asc;
+
+create view vagas_e_proprietarios
+as select p.pier, p.vaga, ' ' as " ", a.nome as PROPRIETÁRIO, ' ' as "  ", a.matricula as MATRÍCULA
+from propriedadeSobreVagas p, associados a
+where p.proprietario = a.matricula;
+
+select * from embarcacoes_e_proprietarios;
+select * from proprietarios_e_embarcacoes;
+select * from associados_e_telefones;
+select * from associados_sem_matricula;
+select * from vagas_e_proprietarios;
 
 --------------------------------------------------------------------------------
 --------------- POPULAÇÃO DAS TABELAS COM OS DADOS DO MUNDO REAL ---------------
