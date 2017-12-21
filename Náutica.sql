@@ -95,15 +95,18 @@ create table tiposDeEmbarcacoes
     primary key (nome)
 );
 
-create table propriedadeSobreVagas
+create table vagas
 (
   pier varchar (20) not null,
   vaga int not null,
-  proprietario varchar (10) not null,
+  proprietario varchar (10),
+  embarcacao varchar (30),
 
   primary key (pier, vaga),
-  foreign key (proprietario) references associados(matricula)
-  );
+  foreign key (proprietario) references associados(matricula),
+  foreign key (embarcacao) references embarcacoes(nome)
+);
+
 --------------------------------------------------------------------------------
 ----------------------- POPULAÇÃO DAS TABELAS DE LOOKUP ------------------------
 --------------------------------------------------------------------------------
@@ -157,112 +160,6 @@ values ('Nine Oceans', 'Escuna', '1141', 'Luiz', 55, 4.2, 1.9, 24000, 1, 'Merced
 -- '1142' não é uma matrícula registrada na tabela associados, portanto TEM que dar erro.
 insert into embarcacoes (nome, tipo, matricula, marinheiro, tamanho, boca, calado, peso, n_motores, marca_motores, combustivel)
 values ('Ten Oceans', 'Jet-ski', '1142', null, null, null, null, null, null, null, null);
-
---------------------------------------------------------------------------------
-------------------------------- CONSULTAS ÚTEIS --------------------------------
---------------------------------------------------------------------------------
-
--- Embarcação, Tamanho em pés, Área, Vaga, Proprietário e Matrícula, ordenada por embarcação
-select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA
-from embarcacoes e, associados a, localizacao l
-where e.matricula = a.matricula and l.embarcacao = e.nome
-order by e.nome;
-
--- Mesma consulta que a anterior, porém ordenada por proprietário
-select a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA, e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga
-from embarcacoes e, associados a, localizacao l
-where e.matricula = a.matricula and l.embarcacao = e.nome
-order by a.nome;
-
--- Matrícula, Nome, DDD e Telefone de todos os associados, incluindo múltiplos telefones
-select t.associado as MATRÍCULA, a.nome as ASSOCIADO, t.ddd, t.telefone
-from associados a join telefones t
-on a.matricula = t.associado
-order by a.nome;
-
--- Associados que não têm matrícula cadastrada (beneméritos, talvez?)
-select matricula as MATRÍCULA, nome as ASSOCIADO
-from associados 
-where length(matricula) < 3
-order by matricula asc;
-
--- Todas as embarcações com nome, tamanho e área/vaga, de UM MESMO associado, não múltiplos
-select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' AS " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, a.matricula as MATRÍCULA
-from embarcacoes e, associados a, localizacao l
-where e.matricula = a.matricula
-and a.nome = 'Edson Fernandes Mascarenhas'
-and l.embarcacao = e.nome;
-
--- Vagas na marina pertencentes a associados, com nome e matrícula
-select p.pier, p.vaga, ' ' as " ", a.nome as PROPRIETÁRIO, ' ' as "  ", a.matricula as MATRÍCULA
-from propriedadeSobreVagas p, associados a
-where p.proprietario = a.matricula;
-
--- OS DADOS DE DATA DE ÚLTIMO PAGAMENTO AINDA NÃO CONSTAM DESTE BANCO DE DADOS.
-
--- Associados que estão devendo há x dias, tal que 30 <= x < 180
-select * from associados a
-where (SYSDATE - a.ultimo_pagamento >=30)
-and (SYSDATE - a.ultimo_pagamento < 180);
-
--- Associados que estão devendo há 180 dias ou mais
-select * from associados a
-where SYSDATE - a.ultimo_pagamento >= 180;
-
--- Associados que estão devendo há 60 dias ou mais
-select *
-from embarcacoes e, associados a
-where SYSDATE - a.ultimo_pagamento >= 60
-and e.matricula = a.matricula;
-
--- Consultas fundamentais de cada tabela
-select * from areas; -- Não existe Pier D?
-select * from associados;
-select * from embarcacoes;
-select * from localizacao;
-select * from propriedadeSobreVagas;
-select * from telefones;
-select * from tiposDeEmbarcacoes;
-select * from vagasPorPier;
-
---------------------------------------------------------------------------------
---------------------------- CRIAÇÃO DE VISUALIZAÇÕES ---------------------------
---------------------------------------------------------------------------------
-
-create view embarcacoes_e_proprietarios
-as select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA
-from embarcacoes e, associados a, localizacao l
-where e.matricula = a.matricula and l.embarcacao = e.nome
-order by e.nome;
-
-create view proprietarios_e_embarcacoes
-as select a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA, e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga
-from embarcacoes e, associados a, localizacao l
-where e.matricula = a.matricula and l.embarcacao = e.nome
-order by a.nome;
-
-create view associados_e_telefones
-as select t.associado as MATRÍCULA, a.nome as ASSOCIADO, t.ddd, t.telefone
-from associados a join telefones t
-on a.matricula = t.associado
-order by a.nome;
-
-create view associados_sem_matricula
-as select matricula as MATRÍCULA, nome as ASSOCIADO
-from associados 
-where length(matricula) < 3
-order by matricula asc;
-
-create view vagas_e_proprietarios
-as select p.pier, p.vaga, ' ' as " ", a.nome as PROPRIETÁRIO, ' ' as "  ", a.matricula as MATRÍCULA
-from propriedadeSobreVagas p, associados a
-where p.proprietario = a.matricula;
-
-select * from embarcacoes_e_proprietarios;
-select * from proprietarios_e_embarcacoes;
-select * from associados_e_telefones;
-select * from associados_sem_matricula;
-select * from vagas_e_proprietarios;
 
 --------------------------------------------------------------------------------
 --------------- POPULAÇÃO DAS TABELAS COM OS DADOS DO MUNDO REAL ---------------
@@ -975,7 +872,126 @@ insert into telefones (associado, ddd, telefone) values ('1611', '21', '3396-118
 insert into telefones (associado, ddd, telefone) values ('1487', null, '*');
 insert into telefones (associado, ddd, telefone) values ('-6', '21', '2468-3000');
 
-insert into propriedadeSobreVagas (pier, vaga, proprietario) values ('Pier C', 11, '1141');
-insert into propriedadeSobreVagas (pier, vaga, proprietario) values ('Pier C', 16, '1141');
-insert into propriedadeSobreVagas (pier, vaga, proprietario) values ('Pier C', 17, '1141');
-insert into propriedadeSobreVagas (pier, vaga, proprietario) values ('Pier C', 18, '1141');
+insert into vagas (pier, vaga, proprietario, embarcacao) values ('Pier C', 11, '1141', 'Seven Oceans');
+insert into vagas (pier, vaga, proprietario, embarcacao) values ('Pier C', 16, '1141', null);
+insert into vagas (pier, vaga, proprietario) values ('Pier C', 17, '1141');
+insert into vagas (pier, vaga, proprietario) values ('Pier C', 18, '1141');
+
+--------------------------------------------------------------------------------
+------------------------------- CONSULTAS ÚTEIS --------------------------------
+--------------------------------------------------------------------------------
+
+-- Embarcação, Tamanho em pés, Área, Vaga, Proprietário e Matrícula, ordenada por embarcação
+select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula and l.embarcacao = e.nome
+order by e.nome;
+
+-- Mesma consulta que a anterior, porém ordenada por proprietário
+select a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA, e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula and l.embarcacao = e.nome
+order by a.nome;
+
+-- Matrícula, Nome, DDD e Telefone de todos os associados, incluindo múltiplos telefones
+select t.associado as MATRÍCULA, a.nome as ASSOCIADO, t.ddd, t.telefone
+from associados a join telefones t
+on a.matricula = t.associado
+order by a.nome;
+
+-- Associados que não têm matrícula cadastrada (beneméritos, talvez?)
+select matricula as MATRÍCULA, nome as ASSOCIADO
+from associados 
+where length(matricula) < 3
+order by matricula asc;
+
+-- Todas as embarcações com nome, tamanho e área/vaga, de UM MESMO associado, não múltiplos
+select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' AS " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, a.matricula as MATRÍCULA
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula
+and a.nome = 'Edson Fernandes Mascarenhas'
+and l.embarcacao = e.nome;
+
+-- Vagas na marina pertencentes a associados, com nome e matrícula
+select p.pier, p.vaga, ' ' as " ", a.nome as PROPRIETÁRIO, ' ' as "  ", a.matricula as MATRÍCULA
+from propriedadeSobreVagas p, associados a
+where p.proprietario = a.matricula;
+
+-- OS DADOS DE DATA DE ÚLTIMO PAGAMENTO AINDA NÃO CONSTAM DESTE BANCO DE DADOS.
+
+-- Associados que estão devendo há x dias, tal que 30 <= x < 180
+select * from associados a
+where (SYSDATE - a.ultimo_pagamento >=30)
+and (SYSDATE - a.ultimo_pagamento < 180);
+
+-- Associados que estão devendo há 180 dias ou mais
+select * from associados a
+where SYSDATE - a.ultimo_pagamento >= 180;
+
+-- Associados que estão devendo há 60 dias ou mais
+select *
+from embarcacoes e, associados a
+where SYSDATE - a.ultimo_pagamento >= 60
+and e.matricula = a.matricula;
+
+-- Consultas fundamentais de cada tabela
+select * from areas; -- Não existe Pier D?
+select * from associados;
+select * from embarcacoes;
+select * from localizacao order by embarcacao;
+select * from propriedadeSobreVagas;
+select * from telefones;
+select * from tiposDeEmbarcacoes;
+select * from vagasPorPier;
+
+--------------------------------------------------------------------------------
+--------------------------- CRIAÇÃO DE VISUALIZAÇÕES ---------------------------
+--------------------------------------------------------------------------------
+
+create view embarcacoes_e_proprietarios
+as select e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga, ' ' as "  ", a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula and l.embarcacao = e.nome
+order by e.nome;
+
+create view proprietarios_e_embarcacoes
+as select a.nome as PROPRIETÁRIO, e.matricula as MATRÍCULA, e.nome as EMBARCAÇÃO, e.tamanho as "TAMANHO (PÉS)", ' ' as " ", l.area as ÁREA, l.vaga
+from embarcacoes e, associados a, localizacao l
+where e.matricula = a.matricula and l.embarcacao = e.nome
+order by a.nome;
+
+create view associados_e_telefones
+as select t.associado as MATRÍCULA, a.nome as ASSOCIADO, t.ddd, t.telefone
+from associados a join telefones t
+on a.matricula = t.associado
+order by a.nome;
+
+create view associados_sem_matricula
+as select matricula as MATRÍCULA, nome as ASSOCIADO
+from associados 
+where length(matricula) < 3
+order by matricula asc;
+
+create view vagasPropEmb
+as select v.pier, v.vaga, ' ' as " ", a.nome as "PROPRIETÁRIO DA VAGA", ' ' as "  ", a.matricula as MATRÍCULA, l.embarcacao as EMBARCAÇÃO
+from vagas v, associados a, localizacao l
+where v.proprietario = a.matricula
+and l.area = v.pier
+and l.vaga = v.vaga;
+
+select * from vagasPropEmb;
+
+drop view VagasProp;
+create view vagasProp
+as select v.pier, v.vaga, ' ' as " ", a.nome as "PROPRIETÁRIO DA VAGA", ' ' as "  ", v.proprietario as MATRÍCULA
+from vagas v, associados a
+where v.proprietario = a.matricula;
+select * from vagasProp;
+
+select * from embarcacoes_e_proprietarios;
+select * from proprietarios_e_embarcacoes;
+select * from associados_e_telefones;
+select * from associados_sem_matricula;
+select * from vagasPropEmb;
+select * from localizacao where area = 'Pier C' order by vaga;
+select * from vagas;
