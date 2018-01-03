@@ -28,6 +28,10 @@ create table telefones
     foreign key (associado) references associados(matricula)
 );
 
+update associados
+set matricula = '114234'
+where matricula = '1141';
+
 create table areas
 (
     nome varchar (20) not null,
@@ -99,11 +103,10 @@ create table vagas
   pier varchar (20) not null,
   vaga int not null,
   proprietario varchar (10),
-  embarcacao varchar (30),
 
   primary key (pier, vaga),
   foreign key (proprietario) references associados(matricula),
-  foreign key (embarcacao) references embarcacoes(nome)
+  foreign key (pier) references areas(nome)
 );
 
 --------------------------------------------------------------------------------
